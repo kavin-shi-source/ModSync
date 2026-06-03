@@ -56,6 +56,15 @@ ipcMain.handle('fs:copyFile', (_, src, dest) => fileManager.copyFile(src, dest))
 ipcMain.handle('fs:computeHash', (_, filePath) => fileManager.computeHash(filePath))
 ipcMain.handle('fs:fileExists', (_, filePath) => fileManager.fileExists(filePath))
 
+const modrinth = require('./modrinth-api')
+
+// Modrinth API
+ipcMain.handle('modrinth:search', (_, query, limit) => modrinth.searchMods(query, limit))
+ipcMain.handle('modrinth:versions', (_, modId, gameVersions, loaders) => modrinth.getModVersions(modId, gameVersions, loaders))
+ipcMain.handle('modrinth:download', (_, url, destPath) => modrinth.downloadMod(url, destPath))
+ipcMain.handle('modrinth:modInfo', (_, modId) => modrinth.getModInfo(modId))
+ipcMain.handle('modrinth:identify', (_, fileName) => modrinth.identifyMod(fileName))
+
 app.whenReady().then(() => {
   createWindow()
 
