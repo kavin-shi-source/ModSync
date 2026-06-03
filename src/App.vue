@@ -2,7 +2,7 @@
   <el-container class="app-container">
     <el-aside width="220px" class="app-sidebar">
       <div class="sidebar-header">
-        <h2>模组管理器</h2>
+        <span class="logo-text">模</span>
       </div>
       <el-menu
         :router="true"
@@ -40,13 +40,13 @@
     </el-aside>
     <el-container>
       <el-header class="app-header">
-        <span class="header-title">Minecraft 多服务器模组管理器</span>
+        <span class="header-title">模组管理器</span>
       </el-header>
       <el-main class="app-main">
         <router-view />
       </el-main>
       <el-footer class="app-footer" height="30px">
-        <span>模组数量: {{ modCount }} | 待更新: {{ updateCount }} | 同步状态: {{ syncStatus }}</span>
+        <span>模组统计 · 共 {{ modCount }} 个 · {{ updateCount }} 个待更新 · 同步状态：{{ syncStatus }}</span>
       </el-footer>
     </el-container>
   </el-container>
@@ -68,10 +68,16 @@ const modCount = computed(() => store.modCount)
 const updateCount = computed(() => store.updateCount)
 const syncStatus = computed(() => store.syncStatus)
 
-onMounted(async () => {
+async function loadServers() {
   if (window.electronAPI) {
     servers.value = await window.electronAPI.getServers()
   }
+}
+
+onMounted(async () => {
+  await loadServers()
+  // 监听服务器列表变更（设置页面保存后自动刷新侧边栏）
+  window.addEventListener('servers-updated', loadServers)
 })
 </script>
 
@@ -97,9 +103,10 @@ html, body, #app {
   color: #fff;
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-.sidebar-header h2 {
-  font-size: 16px;
-  margin: 0;
+.sidebar-header .logo-text {
+  font-size: 24px;
+  font-weight: bold;
+  color: #409eff;
 }
 .app-header {
   display: flex;
