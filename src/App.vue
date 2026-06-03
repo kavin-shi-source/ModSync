@@ -41,6 +41,9 @@
     <el-container>
       <el-header class="app-header">
         <span class="header-title">模组管理器</span>
+        <div class="header-right">
+          <ThemeToggle />
+        </div>
       </el-header>
       <el-main class="app-main">
         <router-view />
@@ -56,6 +59,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 import { FolderOpened, Monitor, Refresh, Setting } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -123,6 +127,11 @@ html, body, #app {
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
+}
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
 }
 .app-main {
   background: var(--bg-primary);
