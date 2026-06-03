@@ -1,6 +1,6 @@
 # Minecraft 多服务器模组管理器
 
-一款面向 Minecraft 服务器管理员的桌面工具，帮助统一管理多个服务器的模组文件，通过 Modrinth API 检测更新，并通过"公共模板"机制在服务器间同步模组配置。
+一款面向 Minecraft 服务器管理员的桌面工具，帮助统一管理多个服务器的模组文件，并通过"公共模板"机制在服务器间同步模组配置。
 
 ## 功能特性
 
@@ -26,7 +26,6 @@
 | 桌面框架 | Electron 42 |
 | 构建工具 | Vite 8 + Rolldown |
 | 数据存储 | sql.js (SQLite WebAssembly) |
-| 更新源 | Modrinth API |
 
 ## 快速开始
 
