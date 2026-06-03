@@ -4,20 +4,20 @@
       <h3>{{ serverName }} — 模组管理</h3>
       <div class="header-actions">
         <el-button @click="scanMods">重新扫描</el-button>
-        <el-button :loading="checkingUpdates" @click="checkAllUpdates">
-          {{ checkingUpdates ? `检查中 ${progress.current}/${progress.total}` : '检查更新' }}
+        <el-button :loading="showProgress" @click="checkAllUpdates">
+          {{ showProgress ? progressText : '检查更新' }}
         </el-button>
         <el-button type="primary" @click="onOpenModsFolder">打开 mods 文件夹</el-button>
       </div>
     </div>
-    <div v-if="checkingUpdates" class="progress-bar-wrap">
+    <div v-if="showProgress" class="progress-bar-wrap">
       <el-progress
-        :percentage="progress.percent"
+        :percentage="progress"
         :text-inside="true"
         :stroke-width="18"
-        :status="progress.percent >= 100 ? 'success' : undefined"
+        :status="progress >= 100 ? 'success' : undefined"
       >
-        <span>{{ progress.current }}/{{ progress.total }} ({{ progress.percent }}%)</span>
+        <span>{{ progressText }}</span>
       </el-progress>
     </div>
     <div class="table-wrap">
@@ -35,10 +35,11 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { showSuccess, showError, showWarning } from '@/utils/feedback'
+import { useProgress } from '@/utils/progress'
 import ModList from '@/components/ModList.vue'
 
 const route = useRoute()
@@ -46,8 +47,7 @@ const serverId = computed(() => route.params.id)
 const serverName = ref('')
 const serverPath = ref('')
 const mods = ref([])
-const checkingUpdates = ref(false)
-const progress = reactive({ current: 0, total: 0, percent: 0 })
+const { showProgress, progress, progressText, start, update, complete } = useProgress()
 
 // ---- 扫描 ----
 async function scanMods() {
@@ -203,12 +203,8 @@ async function checkAllUpdates() {
     return
   }
 
-  checkingUpdates.value = true
-  progress.current = 0
-  progress.total = mods.value.length
-  progress.percent = 0
+  start('开始检查更新...', mods.value.length)
 
-  let checked = 0
   for (const mod of mods.value) {
     try {
       // 简单检查: 调用后端 checkModUpdate
@@ -222,16 +218,11 @@ async function checkAllUpdates() {
     } catch {
       mod.hasUpdate = false
     }
-    checked++
-    progress.current = checked
-    progress.percent = Math.round((checked / progress.total) * 100)
+    update()
   }
 
-  checkingUpdates.value = false
-  progress.percent = 100
-
   const updatable = mods.value.filter(m => m.hasUpdate).length
-  showSuccess(`检查完成，${updatable} 个模组可更新`)
+  complete(`检查完成，${updatable} 个模组可更新`)
 }
 
 // ---- 初始化 ----
