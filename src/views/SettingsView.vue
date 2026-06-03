@@ -137,8 +137,9 @@ async function loadModStats(server) {
   if (!server.path || !server.id) return
   try {
     const entries = await window.electronAPI.readDirectory(server.path + '/mods')
-    const total = entries.filter(e => e.isFile).length
-    const disabled = entries.filter(e => e.isFile && /\.disabled$/i.test(e.name)).length
+    const jarFiles = entries.filter(e => e.isFile && /\.jar(\.disabled)?$/i.test(e.name))
+    const total = jarFiles.length
+    const disabled = jarFiles.filter(e => /\.disabled$/i.test(e.name)).length
     const enabled = total - disabled
     modStats[server.id] = { total, enabled, disabled }
   } catch {
@@ -178,15 +179,6 @@ async function selectTemplatePath() {
 function onNameChange(row) {
   if (row.id) {
     window.electronAPI.saveServer({ ...row })
-  }
-}
-
-async function selectServerPath(server) {
-  const dir = await window.electronAPI.selectDirectory()
-  if (dir) {
-    server.path = dir
-    await window.electronAPI.saveServer({ ...server })
-    await loadModStats(server)
   }
 }
 
@@ -283,7 +275,6 @@ async function saveSettings() {
   } catch (err) {
     console.error('[saveSettings] 保存设置失败:', err)
     showError('保存设置失败', err.message || err)
-    alert('保存设置失败: ' + (err.message || err))
   }
 }
 </script>
