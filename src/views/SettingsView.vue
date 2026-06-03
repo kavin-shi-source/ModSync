@@ -1,79 +1,91 @@
 <template>
-  <div class="settings-page">
-    <h3>设置</h3>
+  <div class="page-content">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="page-title-group">
+        <h2>设置</h2>
+        <p>管理服务器和同步配置</p>
+      </div>
+    </div>
 
-    <el-tabs v-model="activeTab">
-      <el-tab-pane label="服务器管理" name="servers">
-        <el-button type="primary" size="small" @click="openAddDialog" style="margin-bottom: 16px;">
-          添加服务器
-        </el-button>
+    <!-- 服务器管理 -->
+    <div class="section-header">
+      <h3>服务器管理</h3>
+      <el-button type="primary" size="small" @click="openAddDialog">
+        添加服务器
+      </el-button>
+    </div>
 
-        <div v-if="serverList.length === 0" class="empty-hint">
-          暂无服务器，点击上方按钮添加
+    <div v-if="serverList.length === 0" class="empty-state">
+      <p class="empty-text">暂无服务器，点击上方按钮添加</p>
+    </div>
+
+    <div v-else class="server-grid">
+      <div
+        v-for="(server, index) in serverList"
+        :key="server.id"
+        class="server-card"
+      >
+        <div class="server-card__header">
+          <el-input
+            v-model="server.name"
+            size="small"
+            placeholder="服务器别名"
+            @change="onNameChange(server)"
+          />
         </div>
-
-        <div v-else class="server-cards">
-          <div
-            v-for="(server, index) in serverList"
-            :key="server.id"
-            class="server-card"
-          >
-            <div class="card-header">
-              <el-input
-                v-model="server.name"
-                size="small"
-                placeholder="服务器别名"
-                @change="onNameChange(server)"
-              />
-            </div>
-            <div class="card-body">
-              <div class="path-info" :title="server.path">
-                <el-icon><FolderOpened /></el-icon>
-                <span class="path-text">{{ truncatePath(server.path) }}</span>
-              </div>
-              <div v-if="modStats[server.id]" class="mod-stats">
-                <el-tag size="small" type="info">模组 {{ modStats[server.id].total }}</el-tag>
-                <el-tag size="small" type="success">启用 {{ modStats[server.id].enabled }}</el-tag>
-                <el-tag v-if="modStats[server.id].disabled > 0" size="small" type="danger">
-                  禁用 {{ modStats[server.id].disabled }}
-                </el-tag>
-              </div>
-              <div v-else-if="server.path" class="mod-stats loading">
-                加载中…
-              </div>
-            </div>
-            <div class="card-footer">
-              <el-button size="small" type="primary" plain @click="scanServer(server)">
-                扫描
-              </el-button>
-              <el-button size="small" type="danger" plain :icon="Delete" @click="removeServer(index)">
-                删除
-              </el-button>
-            </div>
+        <div class="server-card__body">
+          <div class="path-info" :title="server.path">
+            <el-icon class="path-icon"><FolderOpened /></el-icon>
+            <span class="path-text">{{ truncatePath(server.path) }}</span>
+          </div>
+          <div v-if="modStats[server.id]" class="mod-tags">
+            <el-tag size="small" type="info">模组 {{ modStats[server.id].total }}</el-tag>
+            <el-tag size="small" type="success">启用 {{ modStats[server.id].enabled }}</el-tag>
+            <el-tag v-if="modStats[server.id].disabled > 0" size="small" type="danger">
+              禁用 {{ modStats[server.id].disabled }}
+            </el-tag>
+          </div>
+          <div v-else-if="server.path" class="mod-tags loading">
+            加载中…
           </div>
         </div>
-      </el-tab-pane>
+        <div class="server-card__footer">
+          <el-button size="small" type="primary" plain @click="scanServer(server)">
+            扫描
+          </el-button>
+          <el-button size="small" type="danger" plain :icon="Delete" @click="removeServer(index)">
+            删除
+          </el-button>
+        </div>
+      </div>
+    </div>
 
-      <el-tab-pane label="公共模板库" name="template">
-        <el-card class="settings-card" shadow="never">
-          <template #header>
-            <span>公共模板路径</span>
-          </template>
-          <el-form label-width="120px">
-            <el-form-item label="模板路径">
-              <el-input v-model="templatePath" placeholder="选择公共模板目录" readonly>
-                <template #append>
-                  <el-button @click="selectTemplatePath">浏览</el-button>
-                </template>
-              </el-input>
-            </el-form-item>
-          </el-form>
-        </el-card>
-      </el-tab-pane>
-    </el-tabs>
+    <!-- 公共模板库 -->
+    <div class="section-header" style="margin-top: 32px;">
+      <h3>公共模板库</h3>
+    </div>
 
-    <div class="settings-actions">
-      <el-button type="primary" @click="saveSettings">保存设置</el-button>
+    <div class="settings-panel">
+      <div class="settings-panel__body">
+        <div class="form-row">
+          <label class="form-label">模板路径</label>
+          <div class="form-input-wrap">
+            <el-input v-model="templatePath" placeholder="选择公共模板目录" readonly>
+              <template #append>
+                <el-button @click="selectTemplatePath">浏览</el-button>
+              </template>
+            </el-input>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 保存按钮 -->
+    <div class="save-bar">
+      <el-button type="primary" size="large" @click="saveSettings">
+        保存设置
+      </el-button>
     </div>
 
     <!-- 添加服务器对话框 -->
@@ -280,73 +292,134 @@ async function saveSettings() {
 </script>
 
 <style scoped>
-.settings-page {
-  padding: 0;
-}
-.settings-card {
-  margin-bottom: 20px;
-}
-.settings-actions {
-  margin-top: 20px;
-}
-.empty-hint {
-  color: var(--text-muted, #909399);
-  font-size: 14px;
-  text-align: center;
-  padding: 40px 0;
+/* ===== 服务器卡片网格 ===== */
+.server-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 16px;
 }
 
-/* ---- 服务器卡片 ---- */
-.server-cards {
+.server-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  transition: box-shadow var(--transition-normal);
+  box-shadow: none;
 }
-.server-card {
-  border: 1px solid var(--border-color, #e4e7ed);
-  border-radius: 8px;
-  padding: 16px;
-  background: var(--bg-card, #fff);
-  transition: box-shadow 0.25s, border-color 0.25s;
-}
+
 .server-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border-color: var(--el-color-primary, #409eff);
+  box-shadow: var(--shadow-md);
 }
-.card-header {
-  margin-bottom: 10px;
-}
-.card-body {
+
+.server-card__header {
   margin-bottom: 12px;
 }
+
+.server-card__body {
+  flex: 1;
+  margin-bottom: 14px;
+}
+
+.server-card__footer {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ===== 路径信息 ===== */
 .path-info {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--text-muted, #909399);
-  margin-bottom: 8px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
 }
+
+.path-icon {
+  flex-shrink: 0;
+  font-size: 15px;
+}
+
 .path-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.mod-stats {
+
+/* ===== 模组标签 ===== */
+.mod-tags {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
-.mod-stats.loading {
+
+.mod-tags.loading {
   font-size: 12px;
-  color: var(--text-muted, #909399);
-}
-.card-footer {
-  display: flex;
-  gap: 8px;
+  color: var(--text-muted);
 }
 
-/* ---- 验证提示 ---- */
+/* ===== 设置面板 ===== */
+.settings-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.settings-panel__body {
+  padding: 20px 24px;
+}
+
+/* ===== 表单行 ===== */
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  min-width: 80px;
+}
+
+.form-input-wrap {
+  flex: 1;
+}
+
+/* ===== 保存按钮栏 ===== */
+.save-bar {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ===== 空状态 ===== */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 0;
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.empty-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* ===== 验证提示 ===== */
 .validation-hint {
   display: flex;
   align-items: center;
@@ -354,10 +427,12 @@ async function saveSettings() {
   font-size: 13px;
   line-height: 1.4;
 }
+
 .hint-success {
-  color: var(--el-color-success, #67c23a);
+  color: var(--success-color);
 }
+
 .hint-error {
-  color: var(--el-color-danger, #f56c6c);
+  color: var(--danger-color);
 }
 </style>

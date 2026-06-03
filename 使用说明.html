@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minecraft 多服务器模组管理器 - 使用说明</title>
+<style>
+  :root {
+    --primary: #409eff;
+    --success: #67c23a;
+    --warning: #e6a23c;
+    --danger: #f56c6c;
+    --info: #909399;
+    --bg: #f5f7fa;
+    --bg-card: #ffffff;
+    --text: #303133;
+    --text-secondary: #606266;
+    --text-muted: #909399;
+    --border: #dcdfe6;
+    --border-light: #e4e7ed;
+    --radius: 8px;
+    --radius-sm: 4px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-hover: 0 4px 20px rgba(0,0,0,0.12);
+    --font: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ===== 顶部导航 ===== */
+  .top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(135deg, #1d2b3a, #304156);
+    color: #fff;
+    padding: 0 40px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .top-nav .logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .top-nav .logo span { color: var(--primary); }
+  .top-nav .version {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  /* ===== 目录侧边栏 ===== */
+  .layout { display: flex; max-width: 1200px; margin: 0 auto; padding: 24px; gap: 28px; }
+  .sidebar {
+    position: sticky;
+    top: 84px;
+    width: 220px;
+    flex-shrink: 0;
+    height: fit-content;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 0;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .sidebar-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 8px 20px 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .sidebar-link {
+    display: block;
+    padding: 7px 20px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .sidebar-link:hover { color: var(--primary); background: #ecf5ff; }
+  .sidebar-link.active { color: var(--primary); border-left-color: var(--primary); background: #ecf5ff; font-weight: 600; }
+  .sidebar-link.sub { padding-left: 32px; font-size: 13px; }
+
+  /* ===== 主内容 ===== */
+  .content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .section {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 32px 36px;
+    margin-bottom: 20px;
+    transition: box-shadow 0.2s;
+  }
+  .section:hover { box-shadow: var(--shadow-hover); }
+
+  .section h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border-light);
+    position: relative;
+  }
+  .section h2::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 48px;
+    height: 2px;
+    background: var(--primary);
+    border-radius: 1px;
+  }
+
+  .section h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 24px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section h3 .badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 1px 10px;
+    border-radius: 10px;
+    background: #ecf5ff;
+    color: var(--primary);
+  }
+
+  .section p { margin: 8px 0; color: var(--text-secondary); }
+  .section ul, .section ol { margin: 8px 0 8px 20px; color: var(--text-secondary); }
+  .section li { margin: 5px 0; }
+
+  /* ===== 提示块 ===== */
+  .tip {
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    margin: 16px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    border-left: 4px solid;
+  }
+  .tip.info { background: #ecf5ff; border-color: var(--primary); color: #2c5b8a; }
+  .tip.success { background: #f0f9eb; border-color: var(--success); color: #4a7c2a; }
+  .tip.warning { background: #fdf6ec; border-color: var(--warning); color: #8a6d2a; }
+  .tip strong { color: inherit; }
+
+  /* ===== 步骤列表 ===== */
+  .steps { counter-reset: step; list-style: none; margin: 16px 0 !important; padding: 0 !important; }
+  .steps li {
+    counter-increment: step;
+    position: relative;
+    padding: 12px 16px 12px 50px;
+    margin: 8px 0 !important;
+    background: #fafafa;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+  .steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .steps li strong { color: var(--text); }
+
+  /* ===== 快捷键表格 ===== */
+  .kbd-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  .kbd-table th, .kbd-table td {
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .kbd-table th { background: #fafafa; font-weight: 600; color: var(--text); }
+  .kbd-table tr:hover td { background: #f5f7fa; }
+  kbd {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-family: inherit;
+    color: var(--text);
+    background: #f5f5f5;
+    border: 1px solid #d0d0d0;
+    border-radius: 3px;
+    box-shadow: 0 1px 0 #bbb;
+    margin: 0 2px;
+  }
+
+  /* ===== 功能卡片网格 ===== */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .feature-card {
+    padding: 20px;
+    background: #fafafa;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+  }
+  .feature-card:hover { border-color: var(--primary); background: #ecf5ff; }
+  .feature-card h4 { font-size: 15px; color: var(--text); margin-bottom: 6px; }
+  .feature-card p { font-size: 13px; color: var(--text-muted); margin: 0; }
+
+  /* ===== 流程图 ===== */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 20px 0;
+    padding: 20px;
+    background: #fafafa;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-light);
+  }
+  .flow-step {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .flow-step .num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .flow-arrow { font-size: 18px; color: var(--text-muted); }
+
+  /* ===== 页脚 ===== */
+  .footer {
+    text-align: center;
+    padding: 32px 20px;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  .footer a { color: var(--primary); text-decoration: none; }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; padding: 16px; }
+    .sidebar {
+      position: static;
+      width: 100%;
+      max-height: none;
+      overflow-y: visible;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding: 12px;
+    }
+    .sidebar-title { display: none; }
+    .sidebar-link {
+      padding: 6px 12px;
+      border-left: none;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+    }
+    .sidebar-link.sub { padding-left: 12px; }
+    .sidebar-link.active { border-left: none; background: #ecf5ff; }
+    .section { padding: 20px; }
+    .top-nav { padding: 0 16px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== 顶部导航 ==================== -->
+<nav class="top-nav">
+  <div class="logo">Minecraft <span>模组管理器</span></div>
+  <div class="version">v1.0.0</div>
+</nav>
+
+<div class="layout">
+
+<!-- ==================== 侧边栏目录 ==================== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-title">目录</div>
+  <a class="sidebar-link active" href="#intro">一、应用简介</a>
+  <a class="sidebar-link" href="#quickstart">二、快速开始</a>
+  <a class="sidebar-link sub" href="#quickstart-add">添加服务器</a>
+  <a class="sidebar-link sub" href="#quickstart-scan">扫描模组</a>
+  <a class="sidebar-link" href="#navigation">三、界面导航</a>
+  <a class="sidebar-link" href="#mods">四、模组管理</a>
+  <a class="sidebar-link sub" href="#mods-scan">扫描模组</a>
+  <a class="sidebar-link sub" href="#mods-update">检查更新</a>
+  <a class="sidebar-link sub" href="#mods-toggle">启用 / 禁用</a>
+  <a class="sidebar-link sub" href="#mods-delete">删除模组</a>
+  <a class="sidebar-link sub" href="#mods-batch">批量操作</a>
+  <a class="sidebar-link sub" href="#mods-context">右键菜单</a>
+  <a class="sidebar-link" href="#sync">五、同步管理</a>
+  <a class="sidebar-link sub" href="#sync-diff">扫描差异</a>
+  <a class="sidebar-link sub" href="#sync-execute">执行同步</a>
+  <a class="sidebar-link sub" href="#sync-ignore">忽略管理</a>
+  <a class="sidebar-link" href="#template">六、公共模板</a>
+  <a class="sidebar-link" href="#settings">七、设置</a>
+  <a class="sidebar-link sub" href="#settings-server">服务器管理</a>
+  <a class="sidebar-link sub" href="#settings-template">模板路径</a>
+  <a class="sidebar-link" href="#shortcuts">八、快捷键</a>
+  <a class="sidebar-link" href="#theme">九、深色模式</a>
+  <a class="sidebar-link" href="#faq">十、常见问题</a>
+  <a class="sidebar-link" href="#tech">十一、技术说明</a>
+</aside>
+
+<!-- ==================== 主内容区 ==================== -->
+<main class="content">
+
+  <!-- ===== 一、应用简介 ===== -->
+  <section class="section" id="intro">
+    <h2>一、应用简介</h2>
+    <p>
+      <strong>Minecraft 多服务器模组管理器</strong> 是一款面向 Minecraft 服务器管理员的桌面工具，
+      基于 Electron + Vue 3 构建。它帮助你统一管理多个服务器的模组文件，
+      通过 Modrinth API 检测模组更新，并通过"公共模板"机制在服务器之间同步模组配置。
+    </p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>模组管理</h4>
+        <p>扫描服务器 mods 目录、查看版本、启用/禁用、批量操作、检查更新</p>
+      </div>
+      <div class="feature-card">
+        <h4>更新检测</h4>
+        <p>通过 Modrinth 官方 API 自动识别模组并比对最新版本</p>
+      </div>
+      <div class="feature-card">
+        <h4>模板同步</h4>
+        <p>以公共模板为基准，在多服务器间同步模组，确保一致性</p>
+      </div>
+      <div class="feature-card">
+        <h4>多服务器</h4>
+        <p>同时管理多个 Minecraft 服务器，独立配置、快速切换</p>
+      </div>
+      <div class="feature-card">
+        <h4>深色模式</h4>
+        <p>支持浅色/深色主题切换，适应不同使用环境</p>
+      </div>
+      <div class="feature-card">
+        <h4>便携设计</h4>
+        <p>提供安装版和便携版，无需复杂配置即可使用</p>
+      </div>
+    </div>
+
+    <div class="tip info">
+      <strong>适用场景：</strong>适用于任何使用 Modrinth 平台模组的 Minecraft 服务器（Paper、Fabric、NeoForge、Spigot 等）。典型的用户是同时维护多个 Velocity/Fabric 服务器集群的管理员。
+    </div>
+  </section>
+
+  <!-- ===== 二、快速开始 ===== -->
+  <section class="section" id="quickstart">
+    <h2>二、快速开始</h2>
+
+    <h3 id="quickstart-add">添加服务器 <span class="badge">第一步</span></h3>
+    <ol class="steps">
+      <li>启动程序，点击左侧菜单 <strong>设置</strong> 进入设置页面</li>
+      <li>在"服务器管理"标签页，点击 <strong>添加服务器</strong> 按钮</li>
+      <li>输入服务器名称（如"生存服"、"创造服"）</li>
+      <li>点击路径选择框，选择服务器根目录（应包含 <code>mods</code> 子目录）</li>
+      <li>点击确认，服务器即被添加</li>
+    </ol>
+
+    <div class="tip success">
+      <strong>提示：</strong>添加成功后，左侧菜单的"服务器"子菜单会自动刷新，出现你刚添加的服务器条目。
+    </div>
+
+    <h3 id="quickstart-scan">扫描模组 <span class="badge">第二步</span></h3>
+    <ol class="steps">
+      <li>点击左侧菜单的服务器名称，进入服务器概览页</li>
+      <li>点击 <strong>管理模组</strong> 按钮，进入模组管理页面</li>
+      <li>程序会自动扫描 <code>mods/</code> 目录，读取所有 <code>.jar</code> 文件</li>
+      <li>扫描完成后，模组以表格形式展示，包含文件名、启用状态、版本号等信息</li>
+    </ol>
+
+    <div class="tip info">
+      <strong>说明：</strong>被禁用的模组文件以 <code>.jar.disabled</code> 后缀标识。程序会将其显示为"禁用"状态，并在文件名上添加删除线样式。
+    </div>
+  </section>
+
+  <!-- ===== 三、界面导航 ===== -->
+  <section class="section" id="navigation">
+    <h2>三、界面导航</h2>
+    <p>应用界面采用经典的左侧菜单 + 右侧内容区布局：</p>
+    <ul>
+      <li><strong>左侧菜单栏</strong> — 包含<strong>公共模板</strong>、<strong>服务器</strong>（子菜单）、<strong>同步管理</strong>、<strong>设置</strong>四个入口。菜单栏可点击折叠按钮收缩为图标模式，为内容区留出更多空间。</li>
+      <li><strong>顶部标题栏</strong> — 显示应用名称，右侧提供<strong>深色模式切换</strong>按钮。</li>
+      <li><strong>底部状态栏</strong> — 显示全局统计信息：模组总数、待更新数量、同步状态。</li>
+      <li><strong>内容区</strong> — 展示当前页面的具体功能界面。</li>
+    </ul>
+
+    <div class="flow">
+      <span class="flow-step"><span class="num">1</span> 公共模板</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step"><span class="num">2</span> 服务器概览</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step"><span class="num">3</span> 模组管理</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step"><span class="num">4</span> 同步管理</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step"><span class="num">5</span> 设置</span>
+    </div>
+  </section>
+
+  <!-- ===== 四、模组管理 ===== -->
+  <section class="section" id="mods">
+    <h2>四、模组管理</h2>
+    <p>模组管理是本应用的核心功能。在服务器概览页点击"管理模组"即可进入。</p>
+
+    <h3 id="mods-scan">扫描模组</h3>
+    <ul>
+      <li>进入模组管理页面时，程序会自动扫描当前服务器的 <code>mods/</code> 目录</li>
+      <li>你也可以随时点击 <strong>重新扫描</strong> 按钮手动刷新模组列表</li>
+      <li>扫描结果包含：<strong>文件名</strong>、<strong>状态</strong>（启用/禁用）、<strong>版本号</strong>（从文件名自动提取）</li>
+      <li>支持 <code>.jar</code> 和 <code>.jar.disabled</code> 两种后缀的文件</li>
+    </ul>
+
+    <h3 id="mods-update">检查更新</h3>
+    <ol class="steps">
+      <li>点击 <strong>检查更新</strong> 按钮，程序将逐个查询 Modrinth API</li>
+      <li>进度条显示当前处理进度（<code>正在处理：当前数 / 总数</code>）</li>
+      <li>比对完成后，有更新的模组会在"更新"列显示红色 <strong>有更新</strong> 标签</li>
+      <li>底部状态栏会更新待更新数量</li>
+    </ol>
+
+    <div class="tip warning">
+      <strong>注意：</strong>更新检测依赖 Modrinth 平台。若模组未发布在 Modrinth 上，或文件名与 Modrinth 项目名差异过大，可能无法识别。每次 API 请求间隔约 1 秒以避免触发限流，因此检查 27 个模组约需 30 秒。
+    </div>
+
+    <h3 id="mods-toggle">启用 / 禁用</h3>
+    <ul>
+      <li><strong>单个操作</strong>：在模组表格的"操作"列，点击"启用"或"禁用"按钮</li>
+      <li><strong>实现方式</strong>：启用/禁用通过重命名文件实现——禁用时添加 <code>.disabled</code> 后缀，启用时去除该后缀。不会修改模组文件内容，可随时切换</li>
+    </ul>
+
+    <h3 id="mods-delete">删除模组</h3>
+    <ul>
+      <li>点击操作列的 <strong>删除</strong> 按钮</li>
+      <li>程序会弹出确认对话框，确认后从磁盘永久删除该文件</li>
+    </ul>
+
+    <h3 id="mods-batch">批量操作</h3>
+    <p>模组表格支持多选，选中后会显示批量操作栏：</p>
+    <ol class="steps">
+      <li>勾选表格左侧的复选框，选中一个或多个模组</li>
+      <li>顶部出现批量操作栏，显示"已选中 N 个模组"</li>
+      <li>可执行：<strong>批量启用</strong>、<strong>批量禁用</strong>、<strong>批量删除</strong></li>
+      <li>点击 <strong>取消选择</strong> 清除所有选中状态</li>
+    </ol>
+
+    <h3 id="mods-context">右键菜单</h3>
+    <p>在任意模组行上<strong>右键点击</strong>，弹出快捷操作菜单：</p>
+    <ul>
+      <li><strong>启用 / 禁用</strong> — 根据模组当前状态显示对应操作</li>
+      <li><strong>删除</strong> — 确认后删除文件</li>
+      <li><strong>打开所在文件夹</strong> — 在系统资源管理器中定位该文件</li>
+    </ul>
+    <p>点击菜单外部或再次右键可关闭菜单。</p>
+
+    <div class="tip info">
+      <strong>小技巧：</strong>在模组文件名行悬停，可查看更多文件名内容（超出部分自动省略号截断）。在右键菜单中选择"打开所在文件夹"是最快捷的定位方式。
+    </div>
+  </section>
+
+  <!-- ===== 五、同步管理 ===== -->
+  <section class="section" id="sync">
+    <h2>五、同步管理</h2>
+    <p>
+      同步管理是本应用的核心功能之一。它基于"<strong>公共模板</strong>"机制工作：
+      你建立一个模板目录作为基准，各个服务器与模板进行差异对比和同步，
+      确保所有服务器的模组保持一致。
+    </p>
+
+    <div class="tip warning">
+      <strong>前置条件：</strong>使用同步功能前，请先在设置页面配置<strong>公共模板路径</strong>，并至少添加一个服务器。
+    </div>
+
+    <h3 id="sync-diff">扫描差异</h3>
+    <ol class="steps">
+      <li>点击左侧菜单 <strong>同步管理</strong> 进入同步页面</li>
+      <li>页面以<strong>服务器分组</strong>展示，每个服务器独立显示差异状态</li>
+      <li>点击 <strong>扫描差异</strong> 按钮开始比对模板与服务器的文件</li>
+      <li>比对基于 <strong>SHA256 哈希值</strong>，确保内容精确匹配</li>
+    </ol>
+    <p>差异类型有三种：</p>
+    <ul>
+      <li><strong>新增</strong> — 模板目录中有，但服务器缺少的文件，需要同步到服务器</li>
+      <li><strong>服务器独有</strong> — 服务器有但模板没有的文件，可以收集回模板</li>
+      <li><strong>已修改</strong> — 模板和服务器都存在但内容不同（哈希值不匹配）</li>
+    </ul>
+
+    <h3 id="sync-execute">执行同步</h3>
+    <ul>
+      <li>在差异树中勾选需要同步的文件</li>
+      <li>点击 <strong>同步选中</strong> 仅同步勾选的文件</li>
+      <li>点击 <strong>同步全部</strong> 同步所有差异文件</li>
+    </ul>
+
+    <h3 id="sync-ignore">忽略管理</h3>
+    <ul>
+      <li>在差异树中勾选文件后，点击 <strong>忽略选中</strong> 可将文件加入忽略列表</li>
+      <li>被忽略的文件将不再显示在差异结果中</li>
+      <li>展开 <strong>已忽略的项目</strong> 可查看所有被忽略的文件并取消忽略</li>
+      <li>忽略配置存储在本地数据库中，重启后依然有效</li>
+    </ul>
+
+    <div class="tip info">
+      <strong>安全机制：</strong>同步引擎会自动排除系统关键文件，如 <code>server.properties</code>、<code>eula.txt</code>、<code>ops.json</code>、<code>whitelist.json</code>、<code>bukkit.yml</code>、<code>spigot.yml</code>、<code>paper.yml</code> 等，以及 <code>.git</code>、<code>libraries</code>、<code>versions</code>、<code>logs</code>、<code>cache</code> 等目录。这防止了关键配置被意外覆盖。
+    </div>
+  </section>
+
+  <!-- ===== 六、公共模板 ===== -->
+  <section class="section" id="template">
+    <h2>六、公共模板</h2>
+    <p>
+      <strong>公共模板</strong> 是一个参考目录，作为所有服务器模组配置的基准。
+      你可以在模板中放置所有服务器都应该拥有的通用模组。
+    </p>
+    <ul>
+      <li>点击左侧菜单 <strong>公共模板</strong> 查看模板目录的文件树</li>
+      <li>文件树展示目录结构和文件的修改时间、大小等元信息</li>
+      <li>模板路径在设置页面配置</li>
+    </ul>
+
+    <div class="tip info">
+      <strong>设计理念：</strong>配置继承链遵循 <strong>全局默认配置 → 公共模板 → 服务器特化</strong> 的层级。公共模板保存通用配置，每个服务器在同步后可以再按需调整特化配置。
+    </div>
+  </section>
+
+  <!-- ===== 七、设置 ===== -->
+  <section class="section" id="settings">
+    <h2>七、设置</h2>
+    <p>设置页面提供服务器和模板路径的管理功能。</p>
+
+    <h3 id="settings-server">服务器管理</h3>
+    <ul>
+      <li><strong>添加服务器</strong> — 填写服务器名称，选择服务器根目录（目录下需包含 <code>mods</code> 子目录才有效）</li>
+      <li><strong>编辑名称</strong> — 在服务器卡片上直接点击名称即可内联编辑</li>
+      <li><strong>删除服务器</strong> — 从数据库中删除服务器记录，不会删除服务器文件</li>
+      <li><strong>统计信息</strong> — 每个服务器卡片展示模组总数、启用数和禁用数</li>
+    </ul>
+
+    <h3 id="settings-template">模板路径</h3>
+    <ul>
+      <li>在"公共模板库"标签页中，点击选择目录按钮</li>
+      <li>选择你想要作为模板的目录</li>
+      <li>配置后，公共模板页面和同步功能即可使用</li>
+    </ul>
+  </section>
+
+  <!-- ===== 八、快捷键 ===== -->
+  <section class="section" id="shortcuts">
+    <h2>八、快捷键</h2>
+    <table class="kbd-table">
+      <thead>
+        <tr><th style="width:200px">快捷键</th><th>操作</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd></td>
+          <td>跳转到<strong>同步管理</strong>页面</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="tip info">
+      <strong>提示：</strong>更多快捷键将在后续版本中增加。如果你有常用的操作希望添加快捷键，欢迎反馈。
+    </div>
+  </section>
+
+  <!-- ===== 九、深色模式 ===== -->
+  <section class="section" id="theme">
+    <h2>九、深色模式</h2>
+    <p>应用支持浅色和深色两种主题，适应不同的使用环境。</p>
+    <ul>
+      <li><strong>切换方式</strong>：点击顶部标题栏右侧的主题切换按钮（太阳/月亮图标）</li>
+      <li><strong>状态持久化</strong>：主题选择会自动保存，下次启动应用时保持上次的选择</li>
+      <li><strong>即时生效</strong>：切换无需重启，所有界面元素同步切换</li>
+    </ul>
+  </section>
+
+  <!-- ===== 十、常见问题 ===== -->
+  <section class="section" id="faq">
+    <h2>十、常见问题</h2>
+
+    <h3>Q: 为什么扫描不到某些模组？</h3>
+    <p>程序仅识别 <code>mods/</code> 目录下以 <code>.jar</code> 或 <code>.jar.disabled</code> 结尾的文件。如果模组在其他子目录中（如 <code>plugins/</code>），请确保它位于 <code>mods/</code> 目录下。</p>
+
+    <h3>Q: 为什么检查更新显示"0 个待更新"？</h3>
+    <p>可能的原因：</p>
+    <ul>
+      <li>模组文件名与 Modrinth 上的项目名差异过大，未能识别</li>
+      <li>模组未发布在 Modrinth 平台</li>
+      <li>本地版本号与 Modrinth 最新版本号一致（确实无需更新）</li>
+      <li>网络连接问题导致 API 请求失败</li>
+    </ul>
+
+    <h3>Q: 启用/禁用模组会影响服务器吗？</h3>
+    <p>不会影响服务器运行。启用/禁用通过修改文件后缀实现（<code>.jar</code> ↔ <code>.jar.disabled</code>），不修改文件内容。禁用后的模组不会被服务器加载，启用后恢复正常。你可以在服务器运行时操作，但部分服务端可能需要重启才能生效。</p>
+
+    <h3>Q: 同步功能会覆盖我的配置文件吗？</h3>
+    <p>不会。同步引擎内置了安全排除列表，会自动跳过 <code>server.properties</code>、<code>eula.txt</code>、<code>ops.json</code>、<code>whitelist.json</code>、<code>bukkit.yml</code>、<code>spigot.yml</code>、<code>paper.yml</code>、<code>commands.yml</code>、<code>permissions.yml</code>、<code>help.yml</code> 等关键配置文件，以及 <code>.git</code>、<code>libraries</code>、<code>versions</code>、<code>logs</code>、<code>cache</code> 等目录。</p>
+
+    <h3>Q: 数据存储在哪里？</h3>
+    <p>所有应用数据（服务器列表、配置、同步忽略列表等）存储在 SQLite 数据库中，数据库文件位于系统用户数据目录下的 <code>mod-manager.db</code>。具体路径取决于操作系统：</p>
+    <ul>
+      <li>Windows: <code>%APPDATA%/Minecraft 模组管理器/mod-manager.db</code></li>
+    </ul>
+
+    <h3>Q: 如何备份我的数据？</h3>
+    <p>直接备份上述路径中的 <code>mod-manager.db</code> 文件即可。该文件包含了所有服务器配置和忽略列表。</p>
+
+    <h3>Q: 程序运行卡顿怎么办？</h3>
+    <p>程序已针对性能做了多项优化（GPU 加速、渲染节流、响应式优化等）。如果仍有卡顿，可以尝试：</p>
+    <ul>
+      <li>确保显卡驱动已更新到最新版本</li>
+      <li>检查是否同时打开了大量其他程序占用 GPU 资源</li>
+      <li>在设置中减少同时管理的服务器数量</li>
+      <li>尝试重启程序</li>
+    </ul>
+
+    <h3>Q: 如何卸载？</h3>
+    <p>安装版：通过 Windows 的"程序和功能"卸载。便携版：直接删除程序文件即可。卸载后如需清理数据，可手动删除 <code>%APPDATA%/Minecraft 模组管理器</code> 目录。</p>
+  </section>
+
+  <!-- ===== 十一、技术说明 ===== -->
+  <section class="section" id="tech">
+    <h2>十一、技术说明</h2>
+    <p>以下信息供对技术细节感兴趣的进阶用户参考。</p>
+
+    <h3>技术栈</h3>
+    <ul>
+      <li><strong>前端框架</strong>：Vue 3（Composition API）+ Element Plus UI 库</li>
+      <li><strong>状态管理</strong>：Pinia</li>
+      <li><strong>桌面框架</strong>：Electron 42</li>
+      <li><strong>构建工具</strong>：Vite 8 + Rolldown</li>
+      <li><strong>数据存储</strong>：sql.js（SQLite WebAssembly 实现）</li>
+    </ul>
+
+    <h3>数据安全</h3>
+    <ul>
+      <li>所有数据存储在本地，不上传任何服务器</li>
+      <li>Modrinth API 调用仅用于搜索模组信息和版本比对，不传输服务器文件内容</li>
+      <li>文件操作（删除、重命名等）均在本地磁盘执行</li>
+    </ul>
+
+    <h3>更新检测原理</h3>
+    <ol class="steps">
+      <li>从文件名中提取模组名（去除版本号后缀，如 <code>fabric-api-0.70.0+1.19.2.jar</code> → <code>fabric-api</code>）</li>
+      <li>通过 Modrinth API 搜索该名称，匹配最佳结果</li>
+      <li>获取该模组在 Modrinth 上的最新版本号</li>
+      <li>与本地文件名中提取的版本号进行字符串比对</li>
+      <li>若不一致则标记为"有更新"</li>
+    </ol>
+
+    <h3>同步原理</h3>
+    <ul>
+      <li>递归遍历模板目录和服务器的 <code>mods/</code> 目录</li>
+      <li>对每个文件计算 SHA256 哈希值</li>
+      <li>根据哈希值配对判断"新增"、"已修改"、"服务器独有"三种差异类型</li>
+      <li>同步操作本质是文件复制（新增/修改方向：模板 → 服务器；独有方向：服务器 → 模板）</li>
+    </ul>
+  </section>
+
+  <footer class="footer">
+    <p>Minecraft 多服务器模组管理器 v1.0.0</p>
+    <p>构建于 Electron + Vue 3 | 数据均存储在本地 | 基于 <a href="https://modrinth.com" target="_blank">Modrinth API</a></p>
+  </footer>
+
+</main>
+</div>
+
+<script>
+// 侧边栏滚动高亮
+(function() {
+  const links = document.querySelectorAll('.sidebar-link');
+  const sections = document.querySelectorAll('.section');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.sidebar-link[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-80px 0px -60% 0px' });
+  sections.forEach(s => observer.observe(s));
+})();
+</script>
+
+</body>
+</html>

@@ -1,55 +1,88 @@
 <template>
-  <div class="server-view">
+  <div class="page-content">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <h3>{{ currentServer?.name || '服务器' }}</h3>
-      <span class="path-hint">{{ currentServer?.path }}</span>
+      <div class="page-title-group">
+        <h2>{{ currentServer?.name || '服务器详情' }}</h2>
+        <p>{{ currentServer?.path || '服务器模组状态与同步管理' }}</p>
+      </div>
+      <div class="header-actions">
+        <el-button type="primary" @click="router.push(`/server/${serverId.value}/mods`)">
+          <el-icon><Management /></el-icon>
+          管理模组
+        </el-button>
+        <el-button type="success" @click="router.push(`/sync`)">
+          <el-icon><Promotion /></el-icon>
+          同步更新
+        </el-button>
+      </div>
     </div>
 
     <!-- 统计卡片 -->
-    <el-row :gutter="16" class="stat-cards">
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <div class="stat-value">{{ modTotal }}</div>
-          <div class="stat-label">模组总数</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <div class="stat-value stat-enabled">{{ modEnabled }}</div>
-          <div class="stat-label">已启用</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <div class="stat-value stat-disabled">{{ modDisabled }}</div>
-          <div class="stat-label">已禁用</div>
-        </el-card>
-      </el-col>
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <div class="stat-value stat-update">{{ modUpdatable }}</div>
-          <div class="stat-label">可更新</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="stats-grid">
+      <div class="stat-card-modern">
+        <div class="stat-icon-wrap stat-icon-blue">
+          <el-icon :size="22"><Management /></el-icon>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">模组总数</span>
+          <span class="stat-number">{{ modTotal }}</span>
+        </div>
+      </div>
+      <div class="stat-card-modern">
+        <div class="stat-icon-wrap stat-icon-green">
+          <svg class="icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+          </svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">已启用</span>
+          <span class="stat-number">{{ modEnabled }}</span>
+        </div>
+      </div>
+      <div class="stat-card-modern">
+        <div class="stat-icon-wrap stat-icon-orange">
+          <svg class="icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+        </div>
+        <div class="stat-body">
+          <span class="stat-label">已禁用</span>
+          <span class="stat-number">{{ modDisabled }}</span>
+        </div>
+      </div>
+    </div>
 
-    <!-- 快捷操作入口 -->
-    <el-row :gutter="16" class="quick-actions">
-      <el-col :span="8" v-for="action in quickActions" :key="action.label">
-        <el-card shadow="hover" class="action-card" @click="action.handler">
-          <el-icon :size="24"><component :is="action.icon" /></el-icon>
-          <div class="action-label">{{ action.label }}</div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <!-- 快捷操作 -->
+    <div class="section-header">
+      <h3>快捷操作</h3>
+    </div>
+    <div class="quick-actions-row">
+      <button
+        v-for="(action, idx) in quickActions"
+        :key="action.label"
+        class="quick-action-btn"
+        :class="'qa-' + ['primary','success','neutral'][idx]"
+        @click="action.handler"
+      >
+        <el-icon :size="16"><component :is="action.icon" /></el-icon>
+        <span>{{ action.label }}</span>
+      </button>
+    </div>
 
-    <!-- 状态提示 -->
-    <div class="status-bar">
-      <span class="sync-status" :class="syncStatusClass">
-        <span class="status-dot"></span>
-        {{ syncStatusText }}
-      </span>
-      <span v-if="lastSync" class="last-sync">上次同步：{{ lastSync }}</span>
+    <!-- 同步状态 -->
+    <div class="section-header sync-section-header">
+      <h3>同步状态</h3>
+      <span v-if="lastSync" class="sync-time-inline">{{ lastSync }}</span>
+      <span v-else class="sync-time-inline muted">从未同步</span>
+    </div>
+    <div class="server-panel">
+      <div class="panel-row">
+        <div class="status-indicator">
+          <span class="status-dot" :class="syncStatusClass"></span>
+          <span class="status-text">{{ syncStatusText }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -69,7 +102,6 @@ const currentServer = computed(() => store.servers.find(s => s.id === serverId.v
 const modTotal = ref(0)
 const modEnabled = ref(0)
 const modDisabled = ref(0)
-const modUpdatable = ref(0)
 const lastSync = ref('')
 
 const quickActions = [
@@ -137,7 +169,6 @@ async function loadModStats() {
     modEnabled.value = enabled
     modDisabled.value = disabled
     store.modCount = modTotal.value
-    modUpdatable.value = store.updateCount || 0
     getLastSyncTime()
   } catch (err) {
     console.error('[ServerView] 加载模组统计失败:', err)
@@ -146,29 +177,114 @@ async function loadModStats() {
 </script>
 
 <style scoped>
-.page-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-.page-header h3 { margin: 0; }
-.path-hint { color: #909399; font-size: 12px; }
+/* ===== 头部操作区 ===== */
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
 
-.stat-cards { margin-bottom: 24px; }
-.stat-card { text-align: center; cursor: default; }
-.stat-value { font-size: 32px; font-weight: 700; color: #303133; }
-.stat-label { font-size: 14px; color: #909399; margin-top: 4px; }
-.stat-enabled { color: #67c23a; }
-.stat-disabled { color: #f56c6c; }
-.stat-update { color: #409eff; }
+/* ===== 快捷操作行 ===== */
+.quick-actions-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
 
-.quick-actions { margin-bottom: 24px; }
-.action-card { text-align: center; cursor: pointer; }
-.action-card:hover { transform: translateY(-2px); transition: transform 0.2s; }
-.action-label { margin-top: 8px; font-size: 14px; color: #606266; }
+.quick-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-family: inherit;
+}
 
-.status-bar { display: flex; align-items: center; gap: 16px; padding: 12px 16px; background: #f5f7fa; border-radius: 8px; font-size: 13px; }
-.sync-status { display: flex; align-items: center; gap: 6px; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.sync-status.idle .status-dot { background: #67c23a; }
-.sync-status.syncing .status-dot { background: #409eff; animation: pulse 1.5s infinite; }
-.sync-status.failed .status-dot { background: #f56c6c; }
-@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-.last-sync { color: #909399; }
+.quick-action-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+  background: var(--bg-primary);
+}
+
+.quick-action-btn.qa-primary:hover {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  background: var(--primary-light);
+}
+.quick-action-btn.qa-success:hover {
+  color: var(--success-color);
+  border-color: var(--success-color);
+  background: var(--success-light);
+}
+.quick-action-btn.qa-neutral:hover {
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+  background: var(--bg-primary);
+}
+
+/* ===== 同步状态区域 ===== */
+.sync-section-header {
+  align-items: center;
+}
+
+.sync-time-inline {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.sync-time-inline.muted {
+  color: var(--text-muted);
+}
+
+/* ===== 服务器面板（扁平风格） ===== */
+.server-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.idle {
+  background: var(--success-color);
+}
+.status-dot.syncing {
+  background: var(--primary-color);
+}
+.status-dot.failed {
+  background: var(--danger-color);
+}
+
+.status-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ===== 图标辅助 ===== */
+.icon-svg {
+  flex-shrink: 0;
+}
 </style>

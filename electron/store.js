@@ -45,8 +45,7 @@ function initTables() {
   if (!db) return
   db.run(`CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL)`)
   db.run(`CREATE TABLE IF NOT EXISTS servers (id TEXT PRIMARY KEY, name TEXT NOT NULL, path TEXT NOT NULL, sort_order INTEGER DEFAULT 0)`)
-  db.run(`CREATE TABLE IF NOT EXISTS mods_cache (id TEXT PRIMARY KEY, server_id TEXT NOT NULL, file_name TEXT NOT NULL, file_path TEXT NOT NULL, modrinth_id TEXT, display_name TEXT, latest_version TEXT, last_checked TEXT, file_hash TEXT, disabled INTEGER DEFAULT 0, FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE)`)
-  db.run(`CREATE TABLE IF NOT EXISTS sync_ignores (server_id TEXT NOT NULL, relative_path TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (server_id, relative_path), FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE)`)
+  db.run(`CREATE TABLE IF NOT EXISTS sync_ignores (server_id TEXT NOT NULL, relative_path TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (server_id, relative_path), FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE)`) 
   saveDb()
 }
 
@@ -122,31 +121,6 @@ async function deleteServer(id) {
   saveDb()
 }
 
-// 模组缓存
-async function getModsCache(serverId) {
-  await getDb()
-  return queryAll('SELECT * FROM mods_cache WHERE server_id = ?', [serverId])
-}
-
-async function upsertModCache(mod) {
-  await getDb()
-  runSql('INSERT OR REPLACE INTO mods_cache (id, server_id, file_name, file_path, modrinth_id, display_name, latest_version, last_checked, file_hash, disabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [mod.id, mod.server_id, mod.file_name, mod.file_path, mod.modrinth_id, mod.display_name, mod.latest_version, mod.last_checked, mod.file_hash, mod.disabled || 0])
-  saveDb()
-}
-
-async function deleteModCache(id) {
-  await getDb()
-  runSql('DELETE FROM mods_cache WHERE id = ?', [id])
-  saveDb()
-}
-
-async function clearModsCache(serverId) {
-  await getDb()
-  runSql('DELETE FROM mods_cache WHERE server_id = ?', [serverId])
-  saveDb()
-}
-
 // 同步忽略
 async function getSyncIgnores(serverId) {
   await getDb()
@@ -174,6 +148,5 @@ async function clearSyncIgnores(serverId) {
 module.exports = {
   getConfig, setConfig,
   getServers, saveServer, deleteServer,
-  getModsCache, upsertModCache, deleteModCache, clearModsCache,
   getSyncIgnores, addSyncIgnore, removeSyncIgnore, clearSyncIgnores
 }

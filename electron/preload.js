@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 文件系统
   readDirectory: (dirPath) => ipcRenderer.invoke('fs:readDirectory', dirPath),
-  checkModUpdate: (mod) => ipcRenderer.invoke('mods:checkUpdate', mod),
+
   flattenDirectory: (dirPath) => ipcRenderer.invoke('fs:flattenDirectory', dirPath),
   openFolder: (filePath) => ipcRenderer.invoke('shell:openFolder', filePath),
   getFileInfo: (filePath) => ipcRenderer.invoke('fs:getFileInfo', filePath),
@@ -22,13 +22,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   copyFile: (src, dest) => ipcRenderer.invoke('fs:copyFile', src, dest),
   computeHash: (filePath) => ipcRenderer.invoke('fs:computeHash', filePath),
   fileExists: (filePath) => ipcRenderer.invoke('fs:fileExists', filePath),
-
-  // Modrinth API
-  searchMods: (query, limit) => ipcRenderer.invoke('modrinth:search', query, limit),
-  getModVersions: (modId) => ipcRenderer.invoke('modrinth:versions', modId),
-  downloadMod: (url, destPath) => ipcRenderer.invoke('modrinth:download', url, destPath),
-  getModrinthModInfo: (modId) => ipcRenderer.invoke('modrinth:modInfo', modId),
-  identifyMod: (fileName) => ipcRenderer.invoke('modrinth:identify', fileName),
+  readFile: (path) => ipcRenderer.invoke('fs:readFile', path),
 
   // 同步引擎
   diffDirectories: (templatePath, serverPath, overrides) => ipcRenderer.invoke('sync:diff', templatePath, serverPath, overrides),

@@ -33,12 +33,7 @@
       <el-table-column label="版本" width="120" show-overflow-tooltip>
         <template #default="{ row }">{{ row.version || '-' }}</template>
       </el-table-column>
-      <el-table-column label="更新" width="70" align="center">
-        <template #default="{ row }">
-          <el-tag v-if="row.hasUpdate" size="small" type="danger">有更新</el-tag>
-          <span v-else class="no-update">-</span>
-        </template>
-      </el-table-column>
+
       <el-table-column label="操作" width="180" fixed="right">
         <template #default="{ row }">
           <el-button text size="small" :type="row.enabled ? 'warning' : 'success'"
@@ -164,9 +159,6 @@ onUnmounted(() => document.removeEventListener('click', onGlobalClick))
 .mod-name.disabled-mod {
   color: #999;
   text-decoration: line-through;
-}
-.no-update {
-  color: #ccc;
 }
 .context-menu {
   position: fixed;

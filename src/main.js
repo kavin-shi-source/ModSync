@@ -6,6 +6,7 @@ import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
 import App from './App.vue'
 import router from './router'
 import { useThemeStore } from '@/stores/theme'
+import './styles/global.css'
 
 const app = createApp(App)
 app.use(createPinia())
