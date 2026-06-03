@@ -53,7 +53,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { FolderOpened, Monitor, Refresh, Setting } from '@element-plus/icons-vue'
@@ -78,6 +78,10 @@ onMounted(async () => {
   await loadServers()
   // 监听服务器列表变更（设置页面保存后自动刷新侧边栏）
   window.addEventListener('servers-updated', loadServers)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('servers-updated', loadServers)
 })
 </script>
 
