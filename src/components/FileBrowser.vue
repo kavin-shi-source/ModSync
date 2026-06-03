@@ -16,11 +16,13 @@
       ref="treeRef"
     >
       <template #default="{ node, data }">
-        <span class="file-item">
-          <el-icon v-if="data.isDirectory"><Folder /></el-icon>
-          <el-icon v-else><Document /></el-icon>
-          <span class="file-name">{{ data.name }}</span>
-          <span class="file-size" v-if="data.size">{{ formatSize(data.size) }}</span>
+        <span class="custom-tree-node">
+          <el-icon><FolderOpened v-if="data.isDirectory" /><Document v-else /></el-icon>
+          <span class="node-label">{{ data.name }}</span>
+          <span class="file-meta">
+            <span class="file-size" v-if="data.size">{{ formatSize(data.size) }}</span>
+            <span class="file-modified" v-if="data.modifiedTime">{{ formatTime(data.modifiedTime) }}</span>
+          </span>
         </span>
       </template>
     </el-tree>
@@ -29,7 +31,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Folder, Document } from '@element-plus/icons-vue'
+import { FolderOpened, Document } from '@element-plus/icons-vue'
 
 const props = defineProps({
   files: { type: Array, default: () => [] }
@@ -83,6 +85,13 @@ function formatSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
+function formatTime(ts) {
+  if (!ts) return ''
+  const d = new Date(ts)
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 watch(searchQuery, (val) => {
   treeRef.value?.filter(val)
 })
@@ -92,21 +101,33 @@ watch(searchQuery, (val) => {
 .file-browser {
   height: 100%;
 }
-.file-item {
+.custom-tree-node {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
+  flex: 1;
+  overflow: hidden;
 }
-.file-name {
+.node-label {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.file-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
 .file-size {
   color: #909399;
   font-size: 12px;
-  margin-left: 8px;
+}
+.file-modified {
+  color: #909399;
+  font-size: 12px;
 }
 </style>
