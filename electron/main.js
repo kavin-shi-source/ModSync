@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const store = require('./store')
+const fileManager = require('./file-manager')
 
 let mainWindow = null
 
@@ -45,6 +46,15 @@ ipcMain.handle('dialog:selectDirectory', async () => {
 ipcMain.handle('server:list', () => store.getServers())
 ipcMain.handle('server:save', (_, server) => store.saveServer(server))
 ipcMain.handle('server:delete', (_, id) => store.deleteServer(id))
+
+// 文件系统
+ipcMain.handle('fs:readDirectory', (_, dirPath) => fileManager.readDirectory(dirPath))
+ipcMain.handle('fs:getFileInfo', (_, filePath) => fileManager.getFileInfo(filePath))
+ipcMain.handle('fs:deleteFile', (_, filePath) => fileManager.deleteFile(filePath))
+ipcMain.handle('fs:renameFile', (_, oldPath, newPath) => fileManager.renameFile(oldPath, newPath))
+ipcMain.handle('fs:copyFile', (_, src, dest) => fileManager.copyFile(src, dest))
+ipcMain.handle('fs:computeHash', (_, filePath) => fileManager.computeHash(filePath))
+ipcMain.handle('fs:fileExists', (_, filePath) => fileManager.fileExists(filePath))
 
 app.whenReady().then(() => {
   createWindow()
