@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
+const store = require('./store')
 
 let mainWindow = null
 
@@ -24,6 +25,26 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   }
 }
+
+// 配置
+ipcMain.handle('config:get', () => store.getConfig())
+ipcMain.handle('config:save', (_, config) => {
+  Object.entries(config).forEach(([key, value]) => store.setConfig(key, value))
+  return true
+})
+
+// 目录选择对话框
+ipcMain.handle('dialog:selectDirectory', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory']
+  })
+  return result.canceled ? null : result.filePaths[0]
+})
+
+// 服务器管理
+ipcMain.handle('server:list', () => store.getServers())
+ipcMain.handle('server:save', (_, server) => store.saveServer(server))
+ipcMain.handle('server:delete', (_, id) => store.deleteServer(id))
 
 app.whenReady().then(() => {
   createWindow()
