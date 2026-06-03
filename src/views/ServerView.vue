@@ -96,8 +96,16 @@ async function openServerFolder() {
   }
 }
 
+function getLastSyncTime() {
+  const saved = localStorage.getItem(`last-sync-${serverId.value}`)
+  if (saved) {
+    lastSync.value = saved
+  }
+}
+
 onMounted(async () => {
   store.setCurrentServer(serverId.value)
+  getLastSyncTime()
   await loadModStats()
 })
 
@@ -129,6 +137,8 @@ async function loadModStats() {
     modEnabled.value = enabled
     modDisabled.value = disabled
     store.modCount = modTotal.value
+    modUpdatable.value = store.updateCount || 0
+    getLastSyncTime()
   } catch (err) {
     console.error('[ServerView] 加载模组统计失败:', err)
   }
