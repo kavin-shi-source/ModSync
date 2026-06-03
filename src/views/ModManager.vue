@@ -37,7 +37,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { confirmDelete, confirmBatch } from '@/utils/confirm'
 import { showSuccess, showError, showWarning } from '@/utils/feedback'
 import { useProgress } from '@/utils/progress'
 import ModList from '@/components/ModList.vue'
@@ -106,9 +106,8 @@ async function toggleMod(mod) {
 
 // ---- 删除 ----
 async function deleteMod(mod) {
-  try {
-    await ElMessageBox.confirm(`确定删除 ${mod.fileName}？`, '确认删除')
-  } catch { return }
+  const confirmed = await confirmDelete('确认删除', `确定删除 ${mod.fileName}？`)
+  if (!confirmed) return
   try {
     const result = await window.electronAPI.deleteFile(mod.path)
     if (result) {
@@ -178,9 +177,8 @@ async function batchDisable(selectedMods) {
 }
 
 async function batchDelete(selectedMods) {
-  try {
-    await ElMessageBox.confirm(`确定删除选中的 ${selectedMods.length} 个模组？`, '确认批量删除')
-  } catch { return }
+  const confirmed = await confirmBatch('确认批量删除', selectedMods.length, `确定删除选中的 ${selectedMods.length} 个模组？`)
+  if (!confirmed) return
   let success = 0
   let fail = 0
   for (const mod of selectedMods) {
