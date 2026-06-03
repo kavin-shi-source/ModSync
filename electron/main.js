@@ -65,6 +65,13 @@ ipcMain.handle('modrinth:download', (_, url, destPath) => modrinth.downloadMod(u
 ipcMain.handle('modrinth:modInfo', (_, modId) => modrinth.getModInfo(modId))
 ipcMain.handle('modrinth:identify', (_, fileName) => modrinth.identifyMod(fileName))
 
+const syncEngine = require('./sync-engine')
+
+// 同步引擎
+ipcMain.handle('sync:diff', (_, templatePath, serverPath, overrides) => syncEngine.diffDirectories(templatePath, serverPath, overrides))
+ipcMain.handle('sync:file', (_, src, dest) => syncEngine.syncFile(src, dest))
+ipcMain.handle('sync:collectToTemplate', (_, serverPath, templatePath, relativePath) => syncEngine.collectToTemplate(serverPath, templatePath, relativePath))
+
 app.whenReady().then(() => {
   createWindow()
 
