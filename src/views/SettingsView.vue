@@ -27,7 +27,7 @@
       <el-table :data="serverList" border stripe style="width: 100%">
         <el-table-column label="别名" min-width="150">
           <template #default="{ row }">
-            <el-input v-model="row.name" size="small" placeholder="输入服务器别名" />
+            <el-input v-model="row.name" size="small" placeholder="输入服务器别名" @change="onNameChange(row)" />
           </template>
         </el-table-column>
         <el-table-column label="路径" min-width="300">
@@ -55,8 +55,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
+import { showSuccess, showError } from '@/utils/feedback'
 import { v4 as uuidv4 } from 'uuid'
 
 const templatePath = ref('')
@@ -75,32 +75,77 @@ async function selectTemplatePath() {
   if (dir) templatePath.value = dir
 }
 
-async function selectServerPath(server) {
-  const dir = await window.electronAPI.selectDirectory()
-  if (dir) server.path = dir
+function onNameChange(row) {
+  // 立即保存别名到数据库（row 是 Vue Proxy，需解构为普通对象）
+  if (row.id) {
+    window.electronAPI.saveServer({ ...row })
+  }
 }
 
-function addServer() {
-  serverList.value.push({
+async function selectServerPath(server) {
+  const dir = await window.electronAPI.selectDirectory()
+  if (dir) {
+    server.path = dir
+    // server 是 Vue Proxy，需解构为普通对象
+    await window.electronAPI.saveServer({ ...server })
+  }
+}
+
+async function addServer() {
+  const newServer = {
     id: uuidv4(),
     name: '',
     path: '',
     sort_order: serverList.value.length
-  })
+  }
+  serverList.value.push(newServer)
+  // 立即保存到数据库，防止刷新丢失（newServer 是普通对象，无需解构）
+  await window.electronAPI.saveServer(newServer)
+  showSuccess('已添加服务器')
+  // 通知侧边栏刷新
+  window.dispatchEvent(new CustomEvent('servers-updated'))
 }
 
-function removeServer(index) {
+async function removeServer(index) {
+  const server = serverList.value[index]
   serverList.value.splice(index, 1)
+  // 立即从数据库删除
+  if (server.id) {
+    await window.electronAPI.deleteServer(server.id)
+  }
+  showSuccess('已删除服务器')
 }
 
 async function saveSettings() {
-  // 保存模板路径
-  await window.electronAPI.saveConfig({ templatePath: templatePath.value })
-  // 保存服务器列表
-  for (const server of serverList.value) {
-    await window.electronAPI.saveServer(server)
+  console.log('[saveSettings] 开始保存设置...')
+  try {
+    // 保存模板路径
+    console.log('[saveSettings] 保存模板路径:', templatePath.value)
+    await window.electronAPI.saveConfig({ templatePath: templatePath.value })
+    console.log('[saveSettings] 模板路径保存成功')
+
+    // 保存服务器列表（同步最新的 name/path/sort_order）
+    console.log('[saveSettings] 保存服务器列表, 共', serverList.value.length, '个服务器')
+    for (const server of serverList.value) {
+      if (!server.id) {
+        server.id = uuidv4()
+      }
+      console.log('[saveSettings] 保存服务器:', server.id, server.name, server.path)
+      // server 是 Vue Proxy，需解构为普通对象再传入 IPC
+      await window.electronAPI.saveServer({ ...server })
+    }
+    console.log('[saveSettings] 所有服务器保存成功')
+
+    showSuccess('设置已保存')
+    // 通知其他页面刷新服务器列表
+    console.log('[saveSettings] 触发 servers-updated 事件')
+    window.dispatchEvent(new CustomEvent('servers-updated'))
+  } catch (err) {
+    console.error('[saveSettings] 保存设置失败:', err)
+    showError('保存设置失败', err.message || err)
+    // 作为最后的保障，也用 alert 显示错误
+    alert('保存设置失败: ' + (err.message || err))
   }
-  ElMessage.success('设置已保存')
 }
 </script>
 
