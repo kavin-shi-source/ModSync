@@ -6,8 +6,6 @@ export function useProgress() {
   const showProgress = ref(false)
   const progress = ref(0)
   const progressText = ref('')
-  const current = ref(0)
-  const total = ref(0)
 
   // 用普通变量做实际计数，通过 requestAnimationFrame 节流同步到响应式 ref
   let _current = 0
@@ -68,10 +66,8 @@ export function useProgress() {
     _total = 0
     showProgress.value = false
     progress.value = 0
-    current.value = 0
-    total.value = 0
     _pendingUpdate = false
   }
 
-  return { showProgress, progress, progressText, current, total, start, update, complete, reset }
+  return { showProgress, progress, progressText, start, update, complete, reset }
 }
