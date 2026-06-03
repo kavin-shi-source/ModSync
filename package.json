@@ -1,0 +1,32 @@
+{
+  "name": "minecraft-server-mod-manager",
+  "version": "1.0.0",
+  "description": "Minecraft 多服务器模组管理器",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build:renderer": "vite build",
+    "build": "npm run build:renderer && electron-builder",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.7",
+    "concurrently": "^10.0.3",
+    "electron": "^42.3.2",
+    "electron-builder": "^26.8.1",
+    "vite": "^8.0.16",
+    "wait-on": "^9.0.10"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "better-sqlite3": "^12.10.0",
+    "element-plus": "^2.14.1",
+    "pinia": "^3.0.4",
+    "uuid": "^14.0.0",
+    "vue": "^3.5.35",
+    "vue-router": "^4.6.4"
+  }
+}
