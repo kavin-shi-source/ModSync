@@ -96,7 +96,7 @@ html, body, #app {
   height: 100vh;
 }
 .app-sidebar {
-  background-color: #304156;
+  background-color: var(--bg-sidebar);
   overflow-y: auto;
 }
 .sidebar-header {
@@ -105,7 +105,7 @@ html, body, #app {
   align-items: center;
   justify-content: center;
   color: #fff;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid var(--border-color);
 }
 .sidebar-header .logo-text {
   font-size: 24px;
@@ -115,27 +115,27 @@ html, body, #app {
 .app-header {
   display: flex;
   align-items: center;
-  background: #fff;
-  border-bottom: 1px solid #e6e6e6;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border-color);
   padding: 0 20px;
 }
 .header-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
 }
 .app-main {
-  background: #f5f7fa;
+  background: var(--bg-primary);
   padding: 20px;
   overflow-y: auto;
 }
 .app-footer {
   display: flex;
   align-items: center;
-  background: #fff;
-  border-top: 1px solid #e6e6e6;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
   padding: 0 20px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-muted);
 }
 </style>
