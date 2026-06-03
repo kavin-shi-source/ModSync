@@ -183,7 +183,7 @@ async function downloadMod(downloadUrl, destPath) {
 async function identifyMod(fileName) {
   const baseName = path.basename(fileName, '.jar').replace(/\.disabled$/, '')
   const modName = baseName.replace(/-\d+[\w.]*$/, '').replace(/-\d+$/, '')
-  const result = await requestQueue.add(() => searchMods(modName, 1))
+  const result = await searchMods(modName, 1)
   if (result.hits && result.hits.length > 0) {
     const hit = result.hits[0]
     return {
@@ -201,5 +201,5 @@ module.exports = {
   getModInfo: (...args) => requestQueue.add(() => getModInfo(...args)),
   getModVersions: (...args) => requestQueue.add(() => getModVersions(...args)),
   downloadMod: (...args) => requestQueue.add(() => downloadMod(...args)),
-  identifyMod
+  identifyMod: (...args) => requestQueue.add(() => identifyMod(...args))
 }

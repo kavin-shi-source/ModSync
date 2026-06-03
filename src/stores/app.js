@@ -9,8 +9,13 @@ export const useAppStore = defineStore('app', () => {
   const updateCount = ref(0)
   const syncStatus = ref('空闲')
 
+  function setCurrentServer(id) {
+    currentServerId.value = id
+  }
+
   return {
     config, servers, currentServerId,
-    modCount, updateCount, syncStatus
+    modCount, updateCount, syncStatus,
+    setCurrentServer
   }
 })

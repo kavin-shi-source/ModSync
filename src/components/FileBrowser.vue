@@ -17,7 +17,10 @@
     >
       <template #default="{ node, data }">
         <span class="custom-tree-node">
-          <el-icon><FolderOpened v-if="data.isDirectory" /><Document v-else /></el-icon>
+          <el-icon>
+            <FolderOpened v-if="data.isDirectory" />
+            <component :is="getFileIcon(data.name)" v-else />
+          </el-icon>
           <span class="node-label">{{ data.name }}</span>
           <span class="file-meta">
             <span class="file-size" v-if="data.size">{{ formatSize(data.size) }}</span>
@@ -31,7 +34,24 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { FolderOpened, Document } from '@element-plus/icons-vue'
+import { FolderOpened, Document, PictureFilled, Tickets, Wallet, Cpu } from '@element-plus/icons-vue'
+
+function getFileIcon(name) {
+  if (!name) return Document
+  const ext = name.split('.').pop()?.toLowerCase()
+  const iconMap = {
+    // 图片
+    png: PictureFilled, jpg: PictureFilled, jpeg: PictureFilled,
+    gif: PictureFilled, svg: PictureFilled, webp: PictureFilled, ico: PictureFilled,
+    // 压缩/存档
+    zip: Wallet, '7z': Wallet, rar: Wallet, tar: Wallet, gz: Wallet, jar: Wallet,
+    // 脚本
+    sh: Cpu, bat: Cpu, cmd: Cpu,
+    // 文本
+    txt: Tickets, md: Tickets,
+  }
+  return iconMap[ext] || Document
+}
 
 const props = defineProps({
   files: { type: Array, default: () => [] }

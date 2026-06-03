@@ -1,104 +1,179 @@
-const Database = require('better-sqlite3')
+const initSqlJs = require('sql.js')
 const path = require('path')
+const fs = require('fs')
 const { app } = require('electron')
 
 const DB_PATH = path.join(app.getPath('userData'), 'mod-manager.db')
 
 let db = null
+let SQL = null
+let initPromise = null
 
-function getDb() {
-  if (!db) {
-    db = new Database(DB_PATH)
-    db.pragma('journal_mode = WAL')
-    initTables()
+async function getDb() {
+  if (db) return db
+  if (!initPromise) {
+    initPromise = (async () => {
+      SQL = await initSqlJs()
+      try {
+        if (fs.existsSync(DB_PATH)) {
+          const buffer = fs.readFileSync(DB_PATH)
+          db = new SQL.Database(buffer)
+        } else {
+          db = new SQL.Database()
+        }
+      } catch {
+        db = new SQL.Database()
+      }
+      initTables()
+      return db
+    })()
   }
-  return db
+  return initPromise
+}
+
+function saveDb() {
+  if (!db) return
+  const data = db.export()
+  const dir = path.dirname(DB_PATH)
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+  fs.writeFileSync(DB_PATH, Buffer.from(data))
 }
 
 function initTables() {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS config (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS servers (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      path TEXT NOT NULL,
-      sort_order INTEGER DEFAULT 0
-    );
-    CREATE TABLE IF NOT EXISTS mods_cache (
-      id TEXT PRIMARY KEY,
-      server_id TEXT NOT NULL,
-      file_name TEXT NOT NULL,
-      file_path TEXT NOT NULL,
-      modrinth_id TEXT,
-      display_name TEXT,
-      latest_version TEXT,
-      last_checked TEXT,
-      file_hash TEXT,
-      disabled INTEGER DEFAULT 0,
-      FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
-    );
-  `)
+  if (!db) return
+  db.run(`CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT NOT NULL)`)
+  db.run(`CREATE TABLE IF NOT EXISTS servers (id TEXT PRIMARY KEY, name TEXT NOT NULL, path TEXT NOT NULL, sort_order INTEGER DEFAULT 0)`)
+  db.run(`CREATE TABLE IF NOT EXISTS mods_cache (id TEXT PRIMARY KEY, server_id TEXT NOT NULL, file_name TEXT NOT NULL, file_path TEXT NOT NULL, modrinth_id TEXT, display_name TEXT, latest_version TEXT, last_checked TEXT, file_hash TEXT, disabled INTEGER DEFAULT 0, FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE)`)
+  db.run(`CREATE TABLE IF NOT EXISTS sync_ignores (server_id TEXT NOT NULL, relative_path TEXT NOT NULL, created_at TEXT DEFAULT (datetime('now')), PRIMARY KEY (server_id, relative_path), FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE)`)
+  saveDb()
+}
+
+function queryAll(sql, params = []) {
+  if (!db) return []
+  const stmt = db.prepare(sql)
+  if (params.length > 0) stmt.bind(params)
+  const results = []
+  while (stmt.step()) {
+    results.push(stmt.getAsObject())
+  }
+  stmt.free()
+  return results
+}
+
+function queryOne(sql, params = []) {
+  if (!db) return null
+  const stmt = db.prepare(sql)
+  if (params.length > 0) stmt.bind(params)
+  let result = null
+  if (stmt.step()) {
+    result = stmt.getAsObject()
+  }
+  stmt.free()
+  return result
+}
+
+function runSql(sql, params = []) {
+  if (!db) return
+  const stmt = db.prepare(sql)
+  if (params.length > 0) stmt.bind(params)
+  stmt.step()
+  stmt.free()
 }
 
 // 配置读写
-function getConfig() {
-  const rows = getDb().prepare('SELECT key, value FROM config').all()
+async function getConfig() {
+  await getDb()
+  const rows = queryAll('SELECT key, value FROM config')
   const config = {}
-  rows.forEach(row => {
-    config[row.key] = row.value
-  })
+  rows.forEach(row => { config[row.key] = row.value })
   return config
 }
 
-function setConfig(key, value) {
-  getDb().prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run(key, String(value))
+async function setConfig(key, value) {
+  await getDb()
+  runSql('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)', [key, String(value)])
+  saveDb()
 }
 
 // 服务器 CRUD
-function getServers() {
-  return getDb().prepare('SELECT * FROM servers ORDER BY sort_order ASC').all()
+async function getServers() {
+  await getDb()
+  return queryAll('SELECT * FROM servers ORDER BY sort_order ASC')
 }
 
-function saveServer(server) {
-  const existing = getDb().prepare('SELECT id FROM servers WHERE id = ?').get(server.id)
+async function saveServer(server) {
+  await getDb()
+  const existing = queryOne('SELECT id FROM servers WHERE id = ?', [server.id])
   if (existing) {
-    getDb().prepare('UPDATE servers SET name = ?, path = ?, sort_order = ? WHERE id = ?')
-      .run(server.name, server.path, server.sort_order || 0, server.id)
+    runSql('UPDATE servers SET name = ?, path = ?, sort_order = ? WHERE id = ?',
+      [server.name, server.path, server.sort_order || 0, server.id])
   } else {
-    getDb().prepare('INSERT INTO servers (id, name, path, sort_order) VALUES (?, ?, ?, ?)')
-      .run(server.id, server.name, server.path, server.sort_order || 0)
+    runSql('INSERT INTO servers (id, name, path, sort_order) VALUES (?, ?, ?, ?)',
+      [server.id, server.name, server.path, server.sort_order || 0])
   }
+  saveDb()
 }
 
-function deleteServer(id) {
-  getDb().prepare('DELETE FROM servers WHERE id = ?').run(id)
+async function deleteServer(id) {
+  await getDb()
+  runSql('DELETE FROM servers WHERE id = ?', [id])
+  saveDb()
 }
 
 // 模组缓存
-function getModsCache(serverId) {
-  return getDb().prepare('SELECT * FROM mods_cache WHERE server_id = ?').all(serverId)
+async function getModsCache(serverId) {
+  await getDb()
+  return queryAll('SELECT * FROM mods_cache WHERE server_id = ?', [serverId])
 }
 
-function upsertModCache(mod) {
-  getDb().prepare(`
-    INSERT OR REPLACE INTO mods_cache (id, server_id, file_name, file_path, modrinth_id, display_name, latest_version, last_checked, file_hash, disabled)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(mod.id, mod.server_id, mod.file_name, mod.file_path, mod.modrinth_id, mod.display_name, mod.latest_version, mod.last_checked, mod.file_hash, mod.disabled || 0)
+async function upsertModCache(mod) {
+  await getDb()
+  runSql('INSERT OR REPLACE INTO mods_cache (id, server_id, file_name, file_path, modrinth_id, display_name, latest_version, last_checked, file_hash, disabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [mod.id, mod.server_id, mod.file_name, mod.file_path, mod.modrinth_id, mod.display_name, mod.latest_version, mod.last_checked, mod.file_hash, mod.disabled || 0])
+  saveDb()
 }
 
-function deleteModCache(id) {
-  getDb().prepare('DELETE FROM mods_cache WHERE id = ?').run(id)
+async function deleteModCache(id) {
+  await getDb()
+  runSql('DELETE FROM mods_cache WHERE id = ?', [id])
+  saveDb()
 }
 
-function clearModsCache(serverId) {
-  getDb().prepare('DELETE FROM mods_cache WHERE server_id = ?').run(serverId)
+async function clearModsCache(serverId) {
+  await getDb()
+  runSql('DELETE FROM mods_cache WHERE server_id = ?', [serverId])
+  saveDb()
+}
+
+// 同步忽略
+async function getSyncIgnores(serverId) {
+  await getDb()
+  return queryAll('SELECT relative_path, created_at FROM sync_ignores WHERE server_id = ?', [serverId])
+}
+
+async function addSyncIgnore(serverId, relativePath) {
+  await getDb()
+  runSql('INSERT OR IGNORE INTO sync_ignores (server_id, relative_path) VALUES (?, ?)', [serverId, relativePath])
+  saveDb()
+}
+
+async function removeSyncIgnore(serverId, relativePath) {
+  await getDb()
+  runSql('DELETE FROM sync_ignores WHERE server_id = ? AND relative_path = ?', [serverId, relativePath])
+  saveDb()
+}
+
+async function clearSyncIgnores(serverId) {
+  await getDb()
+  runSql('DELETE FROM sync_ignores WHERE server_id = ?', [serverId])
+  saveDb()
 }
 
 module.exports = {
   getConfig, setConfig,
   getServers, saveServer, deleteServer,
-  getModsCache, upsertModCache, deleteModCache, clearModsCache
+  getModsCache, upsertModCache, deleteModCache, clearModsCache,
+  getSyncIgnores, addSyncIgnore, removeSyncIgnore, clearSyncIgnores
 }

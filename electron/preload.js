@@ -13,6 +13,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // 文件系统
   readDirectory: (dirPath) => ipcRenderer.invoke('fs:readDirectory', dirPath),
+  checkModUpdate: (mod) => ipcRenderer.invoke('mods:checkUpdate', mod),
+  flattenDirectory: (dirPath) => ipcRenderer.invoke('fs:flattenDirectory', dirPath),
+  openFolder: (filePath) => ipcRenderer.invoke('shell:openFolder', filePath),
   getFileInfo: (filePath) => ipcRenderer.invoke('fs:getFileInfo', filePath),
   deleteFile: (filePath) => ipcRenderer.invoke('fs:deleteFile', filePath),
   renameFile: (oldPath, newPath) => ipcRenderer.invoke('fs:renameFile', oldPath, newPath),
@@ -31,4 +34,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   diffDirectories: (templatePath, serverPath, overrides) => ipcRenderer.invoke('sync:diff', templatePath, serverPath, overrides),
   syncFile: (src, dest) => ipcRenderer.invoke('sync:file', src, dest),
   syncCollectToTemplate: (serverPath, templatePath, relativePath) => ipcRenderer.invoke('sync:collectToTemplate', serverPath, templatePath, relativePath),
+
+  // 同步忽略
+  getIgnores: (serverId) => ipcRenderer.invoke('sync:getIgnores', serverId),
+  addIgnore: (serverId, relativePath) => ipcRenderer.invoke('sync:addIgnore', serverId, relativePath),
+  removeIgnore: (serverId, relativePath) => ipcRenderer.invoke('sync:removeIgnore', serverId, relativePath),
 })

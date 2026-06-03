@@ -1,19 +1,27 @@
 <template>
   <el-container class="app-container">
-    <el-aside width="220px" class="app-sidebar">
+    <el-aside :width="isCollapsed ? '64px' : '220px'" class="app-sidebar">
       <div class="sidebar-header">
-        <span class="logo-text">模</span>
+        <span v-show="!isCollapsed" class="logo-text">模</span>
+        <el-button
+          :icon="isCollapsed ? Expand : Fold"
+          size="small"
+          circle
+          class="collapse-btn"
+          @click="isCollapsed = !isCollapsed"
+        />
       </div>
       <el-menu
         :router="true"
         :default-active="currentRoute"
+        :collapse="isCollapsed"
         background-color="#304156"
         text-color="#bfcbd9"
         active-text-color="#409eff"
       >
         <el-menu-item index="/template">
           <el-icon><FolderOpened /></el-icon>
-          <span>公共模板</span>
+          <template #title>公共模板</template>
         </el-menu-item>
         <el-sub-menu index="servers">
           <template #title>
@@ -30,11 +38,11 @@
         </el-sub-menu>
         <el-menu-item index="/sync">
           <el-icon><Refresh /></el-icon>
-          <span>同步管理</span>
+          <template #title>同步管理</template>
         </el-menu-item>
         <el-menu-item index="/settings">
           <el-icon><Setting /></el-icon>
-          <span>设置</span>
+          <template #title>设置</template>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -53,19 +61,23 @@
       </el-footer>
     </el-container>
   </el-container>
+  <UndoBar />
 </template>
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { Expand, Fold } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import UndoBar from '@/components/UndoBar.vue'
 import { FolderOpened, Monitor, Refresh, Setting } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
 const store = useAppStore()
 const servers = ref([])
+const isCollapsed = ref(false)
 
 const currentRoute = computed(() => route.path)
 const modCount = computed(() => store.modCount)
@@ -78,14 +90,24 @@ async function loadServers() {
   }
 }
 
+function handleKeyboard(e) {
+  // Ctrl+Shift+S 跳转到同步页面
+  if (e.ctrlKey && e.shiftKey && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault()
+    router.push('/sync')
+  }
+}
+
 onMounted(async () => {
   await loadServers()
   // 监听服务器列表变更（设置页面保存后自动刷新侧边栏）
   window.addEventListener('servers-updated', loadServers)
+  window.addEventListener('keydown', handleKeyboard)
 })
 
 onUnmounted(() => {
   window.removeEventListener('servers-updated', loadServers)
+  window.removeEventListener('keydown', handleKeyboard)
 })
 </script>
 
@@ -108,13 +130,27 @@ html, body, #app {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   color: #fff;
   border-bottom: 1px solid var(--border-color);
+  padding: 0 8px;
 }
 .sidebar-header .logo-text {
   font-size: 24px;
   font-weight: bold;
   color: #409eff;
+  flex-shrink: 0;
+}
+.collapse-btn {
+  flex-shrink: 0;
+  color: #bfcbd9 !important;
+  border: none !important;
+  background: transparent !important;
+  font-size: 16px;
+}
+.collapse-btn:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,0.1) !important;
 }
 .app-header {
   display: flex;

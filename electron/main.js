@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
 const path = require('path')
 const store = require('./store')
 const fileManager = require('./file-manager')
@@ -29,8 +29,10 @@ function createWindow() {
 
 // 配置
 ipcMain.handle('config:get', () => store.getConfig())
-ipcMain.handle('config:save', (_, config) => {
-  Object.entries(config).forEach(([key, value]) => store.setConfig(key, value))
+ipcMain.handle('config:save', async (_, config) => {
+  for (const [key, value] of Object.entries(config)) {
+    await store.setConfig(key, value)
+  }
   return true
 })
 
@@ -49,6 +51,12 @@ ipcMain.handle('server:delete', (_, id) => store.deleteServer(id))
 
 // 文件系统
 ipcMain.handle('fs:readDirectory', (_, dirPath) => fileManager.readDirectory(dirPath))
+ipcMain.handle('shell:openFolder', (_, filePath) => { shell.showItemInFolder(filePath); return true })
+ipcMain.handle('fs:flattenDirectory', (_, dirPath) => syncEngine.flattenDirectory(dirPath))
+ipcMain.handle('mods:checkUpdate', async (_, _mod) => {
+  // 暂未实现 Modrinth API 检查，返回无更新
+  return { hasUpdate: false }
+})
 ipcMain.handle('fs:getFileInfo', (_, filePath) => fileManager.getFileInfo(filePath))
 ipcMain.handle('fs:deleteFile', (_, filePath) => fileManager.deleteFile(filePath))
 ipcMain.handle('fs:renameFile', (_, oldPath, newPath) => fileManager.renameFile(oldPath, newPath))
@@ -71,6 +79,11 @@ const syncEngine = require('./sync-engine')
 ipcMain.handle('sync:diff', (_, templatePath, serverPath, overrides) => syncEngine.diffDirectories(templatePath, serverPath, overrides))
 ipcMain.handle('sync:file', (_, src, dest) => syncEngine.syncFile(src, dest))
 ipcMain.handle('sync:collectToTemplate', (_, serverPath, templatePath, relativePath) => syncEngine.collectToTemplate(serverPath, templatePath, relativePath))
+
+// 同步忽略
+ipcMain.handle('sync:getIgnores', (_, serverId) => store.getSyncIgnores(serverId))
+ipcMain.handle('sync:addIgnore', (_, serverId, relativePath) => store.addSyncIgnore(serverId, relativePath))
+ipcMain.handle('sync:removeIgnore', (_, serverId, relativePath) => store.removeSyncIgnore(serverId, relativePath))
 
 app.whenReady().then(() => {
   createWindow()

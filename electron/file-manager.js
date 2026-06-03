@@ -8,10 +8,13 @@ async function readDirectory(dirPath) {
     const entries = await fsPromises.readdir(dirPath, { withFileTypes: true })
     const result = []
     for (const entry of entries) {
+      const isFile = entry.isFile()
+      const isDirectory = entry.isDirectory()
       result.push({
         name: entry.name,
-        isDirectory: entry.isDirectory(),
-        isFile: entry.isFile(),
+        type: isFile ? 'file' : isDirectory ? 'directory' : 'other',
+        isDirectory,
+        isFile,
         path: path.join(dirPath, entry.name)
       })
     }
