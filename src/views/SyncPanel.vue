@@ -17,6 +17,17 @@
       </el-button>
     </div>
 
+    <div v-if="syncProgress.showProgress.value" class="sync-progress">
+      <el-progress
+        :percentage="syncProgress.progress.value"
+        :text-inside="true"
+        :stroke-width="20"
+        :status="syncProgress.progress.value >= 100 ? 'success' : undefined"
+      >
+        <span>{{ syncProgress.progressText.value }}</span>
+      </el-progress>
+    </div>
+
     <el-tabs v-model="activeTab" @tab-change="onTabChange">
       <el-tab-pane v-for="server in servers" :key="server.id" :label="server.name" :name="server.id">
         <DiffTree
@@ -35,6 +46,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { showSuccess, showError, showWarning } from '@/utils/feedback'
+import { useProgress } from '@/utils/progress'
 import DiffTree from '@/components/DiffTree.vue'
 
 const servers = ref([])
@@ -43,6 +55,7 @@ const serverDiffs = reactive({})
 const ignoredPaths = reactive({})
 const scanning = ref(false)
 const syncing = ref(false)
+const syncProgress = useProgress()
 const activeTab = ref('')
 const treeRefs = reactive({})
 
@@ -170,6 +183,7 @@ async function syncAll() {
 
 async function executeSync(diffList) {
   syncing.value = true
+  syncProgress.start('正在同步...', diffList.length)
   let successCount = 0
   let failCount = 0
   // 按服务器分组执行
@@ -200,9 +214,11 @@ async function executeSync(diffList) {
       } catch {
         failCount++
       }
+      syncProgress.update()
     }
   }
   syncing.value = false
+  syncProgress.complete(`同步完成: 成功 ${successCount} 个，失败 ${failCount} 个`)
   showSuccess(`同步完成: 成功 ${successCount} 个，失败 ${failCount} 个`)
 }
 
@@ -239,5 +255,9 @@ onMounted(async () => {
 .page-header h3 {
   margin: 0;
   flex: 1;
+}
+.sync-progress {
+  margin-bottom: 16px;
+  padding: 0 4px;
 }
 </style>
